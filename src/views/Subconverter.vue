@@ -40,12 +40,16 @@
                     </el-option-group>
                     <el-button slot="append" @click="gotoRemoteConfig" icon="el-icon-link">配置示例</el-button>
                   </el-select>
-                </el-form-item>
-                <el-form-item label="Include:">
-                  <el-input v-model="form.includeRemarks" placeholder="节点名包含的关键字，支持正则" />
-                </el-form-item>
-                <el-form-item label="Exclude:">
-                  <el-input v-model="form.excludeRemarks" placeholder="节点名不包含的关键字，支持正则" />
+                </el-form-item>                <el-form-item label="Include:">
+                  <el-input v-model="form.includeRemarks" placeholder="节点名包含的关键字，支持正则。留空保留所有节点" />
+                  <div style="font-size: 12px; color: #909399; margin-top: 5px;">
+                    提示：要保留"剩余流量"等信息节点，请留空或使用：.*
+                  </div>
+                </el-form-item>                <el-form-item label="Exclude:">
+                  <el-input v-model="form.excludeRemarks" placeholder="节点名不包含的关键字，支持正则。留空不过滤任何节点" />
+                  <div style="font-size: 12px; color: #909399; margin-top: 5px;">
+                    提示：要过滤无用节点，建议使用：(?i)(永久|发布页|网址|网站|卸载|测试|官网|群|TG)
+                  </div>
                 </el-form-item>
                 <el-form-item label="FileName:">
                   <el-input v-model="form.filename" placeholder="返回的订阅文件名" />
@@ -83,9 +87,11 @@
                       </el-row>
                       <el-row>
                         <el-checkbox v-model="form.fdn" label="过滤非法节点"></el-checkbox>
+                      </el-row>                      <el-row>
+                        <el-checkbox v-model="form.expand" label="规则展开"></el-checkbox>
                       </el-row>
                       <el-row>
-                        <el-checkbox v-model="form.expand" label="规则展开"></el-checkbox>
+                        <el-checkbox v-model="form.keepTraffic" @change="handleKeepTrafficChange" label="保留流量信息"></el-checkbox>
                       </el-row>
                       <el-button slot="reference">更多选项</el-button>
                     </el-popover>
@@ -289,8 +295,7 @@ export default {
               }
             ]
           },
-          {
-            label: "Special",
+          {            label: "Special",
             options: [
               {
                 label: "NeteaseUnblock(仅规则，No-Urltest)",
@@ -301,6 +306,11 @@ export default {
                 label: "Basic(仅GEOIP CN + Final)",
                 value:
                   "https://cdn.jsdelivr.net/gh/SleepyHeeead/subconverter-config@master/remote-config/special/basic.ini"
+              },
+              {
+                label: "保留流量信息(Keep Traffic Info)",
+                value:
+                  "./keep-traffic-config.ini"
               }
             ]
           }
@@ -320,10 +330,10 @@ export default {
         sort: false,
         udp: false,
         tfo: false,
-        scv: true,
-        fdn: false,
+        scv: true,        fdn: false,
         expand: true,
         appendType: false,
+        keepTraffic: false, // 是否保留流量信息节点
         insert: false, // 是否插入默认订阅的节点，对应配置项 insert_url
         new_name: true, // 是否使用 Clash 新字段
 
@@ -748,9 +758,22 @@ export default {
         setTime: now,
         ttl: parseInt(ttl),
         expire: now + ttl * 1000,
-        value: itemValue
-      }
+        value: itemValue      }
       localStorage.setItem(itemKey, JSON.stringify(data))
+    },    handleKeepTrafficChange(value) {
+      if (value) {
+        // 启用保留流量信息时，设置合适的过滤规则
+        this.form.includeRemarks = ".*"; // 包含所有节点
+        this.form.excludeRemarks = "(?i)(永久|发布页|网址|网站|卸载|测试|test|官网|website|TG|Telegram|群|Group|公告|帮助|教程|下载|推广|邀请|关注|加入|联系|备用|镜像|论坛|博客|社区)"; // 排除非代理节点但保留流量信息
+        this.form.remoteConfig = "./keep-traffic-config.ini"; // 使用专门的配置文件
+        this.$message.success("已启用保留流量信息模式，过滤永久、发布页、网址等关键字");
+      } else {
+        // 禁用时清空过滤规则
+        this.form.includeRemarks = "";
+        this.form.excludeRemarks = "";
+        this.form.remoteConfig = "";
+        this.$message.info("已禁用保留流量信息模式");
+      }
     }
   },
 };
