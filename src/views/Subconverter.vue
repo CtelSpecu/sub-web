@@ -89,10 +89,14 @@
                         <el-checkbox v-model="form.fdn" label="过滤非法节点"></el-checkbox>
                       </el-row>                      <el-row>
                         <el-checkbox v-model="form.expand" label="规则展开"></el-checkbox>
-                      </el-row>
-                      <el-row>
+                      </el-row>                      <el-row>
                         <el-checkbox v-model="form.keepTraffic" @change="handleKeepTrafficChange" label="保留流量信息"></el-checkbox>
+                      </el-row>                      <el-row>
+                        <el-checkbox v-model="form.addDefaultInfo" label="添加默认信息节点"></el-checkbox>
                       </el-row>
+                      <div v-if="form.addDefaultInfo" style="font-size: 12px; color: #909399; margin: 5px 0;">
+                        提示：将自动添加"梯子下载：ladders.ctelspecu.hxcn.top"和"推荐使用新加坡等低延时节点"到订阅开头
+                      </div>
                       <el-button slot="reference">更多选项</el-button>
                     </el-popover>
                     <el-popover placement="bottom" style="margin-left: 10px">
@@ -332,8 +336,8 @@ export default {
         tfo: false,
         scv: true,        fdn: false,
         expand: true,
-        appendType: false,
-        keepTraffic: false, // 是否保留流量信息节点
+        appendType: false,        keepTraffic: false, // 是否保留流量信息节点
+        addDefaultInfo: true, // 默认添加信息节点
         insert: false, // 是否插入默认订阅的节点，对应配置项 insert_url
         new_name: true, // 是否使用 Clash 新字段
 
@@ -423,8 +427,7 @@ export default {
         name: "",
         value: "",
       })
-    },
-    makeUrl() {
+    },    makeUrl() {
       if (this.form.sourceSubUrl === "" || this.form.clientType === "") {
         this.$message.error("订阅链接与客户端为必填项");
         return false;
@@ -433,10 +436,25 @@ export default {
       let backend =
         this.form.customBackend === ""
           ? defaultBackend
-          : this.form.customBackend;
-
-      let sourceSub = this.form.sourceSubUrl;
+          : this.form.customBackend;      let sourceSub = this.form.sourceSubUrl;
       sourceSub = sourceSub.replace(/(\n|\r|\n\r)/g, "|");
+
+      // 如果启用了添加默认信息节点选项，则添加默认信息节点
+      if (this.form.addDefaultInfo) {
+        // 创建包含默认信息节点的假节点（用于显示信息）
+        const defaultInfoNodes = [
+          "ss://YWVzLTI1Ni1nY206ZGVmYXVsdA==@127.0.0.1:1080#梯子下载：ladders.ctelspecu.hxcn.top",
+          "ss://YWVzLTI1Ni1nY206ZGVmYXVsdA==@127.0.0.1:1081#推荐使用新加坡等低延时节点"
+        ];
+        
+        // 将默认信息节点添加到源订阅的开头
+        const infoNodesString = defaultInfoNodes.join("|");
+        if (sourceSub) {
+          sourceSub = infoNodesString + "|" + sourceSub;
+        } else {
+          sourceSub = infoNodesString;
+        }
+      }
 
       this.customSubUrl =
         backend +
