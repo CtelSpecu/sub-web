@@ -1,0 +1,10 @@
+# Cloudflare Pages配置文件
+# 强制使用npm而不是yarn
+
+build:
+  command: npm run build
+  install_command: npm install
+  output_directory: dist
+  environment_variables:
+    NODE_VERSION: "18"
+    NPM_CONFIG_PRODUCTION: false
